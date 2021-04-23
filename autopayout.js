@@ -18,6 +18,7 @@ const fs = require('fs');
 const prompts = require('prompts');
 const yargs = require('yargs');
 const config = require('./config.js');
+const { types } = require('@sora-substrate/types');
 
 const argv = yargs
   .scriptName("autopayout.js")
@@ -105,19 +106,17 @@ const main = async () => {
     // Connect to node
     console.log(`\x1b[1m -> Connecting to\x1b[0m`, wsProvider);
     const provider = new WsProvider(wsProvider);
-    const api = await ApiPromise.create({ provider });
+    const api = await ApiPromise.create({ provider, types });
 
     // Check account balance
-    const accountBalance = await api.query.system.account(address)
-    const totalBalance = accountBalance.data.free
-    const freeBalance = BigNumber(totalBalance.toString()).minus(
-      accountBalance.data.miscFrozen.toString()
-    )
-    if (freeBalance === 0) {
-      console.log(`\x1b[31m\x1b[1mError! Account ${address} doesn't have free funds\x1b[0m\n`);
+    const accountBalance = await api.derive.balances.all(address);
+    const availableBalance = accountBalance.availableBalance;
+    if (availableBalance.eq(0)) {
+      console.log(`\x1b[31m\x1b[1mError! Account ${address} doesn't have available funds\x1b[0m\n`);
       process.exit(1);
     }
-    console.log(`\x1b[1m -> Account ${address} free balance is ${(new BigNumber(freeBalance).div(new BigNumber(10).pow(config.decimalPlaces))).toFixed(3)} ${config.denom}\x1b[0m`);
+    console.log(`\x1b[1m -> Account ${address} available balance is ${availableBalance.toHuman()}\x1b[0m`);
+
 
     // Get session progress info
     const chainActiveEra = await api.query.staking.activeEra();
@@ -131,9 +130,9 @@ const main = async () => {
 
     let transactions = [];
     let unclaimedRewards = [];
-    let era = currentEra - 84;
+    let era = activeEra > 84 ? activeEra - 84 : 0;
 
-    for (era; era < currentEra; era++) {
+    for (era; era < activeEra; era++) {
       const eraPoints = await api.query.staking.erasRewardPoints(era);
       const eraValidators = Object.keys(eraPoints.individual.toHuman());
       if (eraValidators.includes(validator) && !claimedRewards.includes(era)) {
@@ -144,14 +143,29 @@ const main = async () => {
     if (transactions.length > 0) {
       console.log(`\x1b[1m -> Unclaimed eras: ${JSON.stringify(unclaimedRewards)}\x1b[0m`);
       // Claim rewards tx
-      const nonce = (await api.derive.balances.account(address)).accountNonce
-      const hash = await api.tx.utility.batch(transactions).signAndSend(signer, { nonce });
-      console.log(`\n\x1b[32m\x1b[1mSuccess! \x1b[37mCheck tx in PolkaScan: https://polkascan.io/kusama/transaction/${hash.toString()}\x1b[0m\n`);
+      const nonce = (await api.derive.balances.account(address)).accountNonce;
+      let blockHash = null;
+      let extrinsicHash = null;
+      let extrinsicStatus = null;
+      await api.tx.utility.batch(transactions)
+        .signAndSend(
+          signer,
+          { nonce },
+          ({ events = [], status }) => {
+            extrinsicStatus = status.type
+            if (status.isInBlock) {
+              extrinsicHash = status.asInBlock.toHex()
+            } else if (status.isFinalized) {
+              blockHash = status.asFinalized.toHex()
+            }
+          }
+        )
+      console.log(`\n\x1b[32m\x1b[1mSuccess! \x1b[37mCheck tx in Polkadot-js app: https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fws.stage.sora2.soramitsu.co.jp#/explorer/query/${blockHash}\x1b[0m\n`);
       if (log) {
-        fs.appendFileSync(`autopayout.log`, `${new Date()} - Claimed rewards, transaction hash is ${hash.toString()}`);
+        fs.appendFileSync(`autopayout.log`, `${new Date()} - Claimed rewards, transaction hash is ${extrinsicHash}`);
       }
     } else {
-      console.log(`\n\x1b[33m\x1b[1mWarning! There's no unclaimed rewards, exiting!\x1b[0m\n`);
+      console.log(`\n\x1b[33m\x1b[1mWarning! There'r no unclaimed rewards, exiting!\x1b[0m\n`);
     }
     process.exit(0);
   }

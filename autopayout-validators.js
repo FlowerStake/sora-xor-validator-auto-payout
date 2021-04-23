@@ -20,6 +20,7 @@ const fs = require('fs');
 const prompts = require('prompts');
 const yargs = require('yargs');
 const config = require('./config.js');
+const { types } = require('@sora-substrate/types');
 
 const argv = yargs
   .scriptName("autopayout.js")
