@@ -14,6 +14,7 @@ const keyring = require('@polkadot/ui-keyring').default;
 keyring.initKeyring({
   isDevelopment: false,
 });
+
 const fs = require('fs');
 const prompts = require('prompts');
 const yargs = require('yargs');
