@@ -1,8 +1,8 @@
 # Substrate validator auto payout
 
-Claim and distribute validator staking rewards for your stakers automagically in Substrate based blockchains.
+Claim and distribute validator staking rewards for your stakers automagically in SORA Substrate blockchain.
 
-Made with ❤️ from ColmenaLabs_SVQ!
+Made with ❤️ from ColmenaLabs_SVQ! and adapted to SORA-XOR Network by Jimi Flowers
 
 ## Install
 
@@ -11,8 +11,8 @@ Needs nodejs (>= v10.20.1), check https://nodejs.org/en/download/ to install for
 Clone the repository and install the needed dependencies:
 
 ```
-git clone https://github.com/Colm3na/substrate-auto-payout.git
-cd polkadot-auto-payout
+git clone https://github.com/jimiflowers/sora-xor-validator-auto-payout.git
+cd sora-xor-validator-auto-payout
 yarn
 ```
 
@@ -42,8 +42,8 @@ Example output:
 ```
  Substrate auto payout
 
- - Check source at https://github.com/Colm3na/substrate-auto-payout
- - Made with love from ColmenaLabs_SVQ https://colmenalabs.org/
+ - Check source at https://github.com/jimiflowers/sora-xor-validator-auto-payout
+ - Made with love from ColmenaLabs_SVQ https://colmenalabs.org/ and adapted to SORA-XOR Network by Jimi Flowers
 
  -> Validator stash address is GTzRQPzkcuynHgkEHhsPBFpKdh4sAacVRsnd8vYfPpTMeEY
  -> Importing account FndLuNiewT7uDSB1Ucr3TQHm5vDvZsHfYV3eHivyB8FBAwF
